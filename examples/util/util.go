@@ -16,7 +16,7 @@ import (
 	"log"
 	"os"
 
-	"go.marzhillstudios.com/pkg/play/aubio"
+	aubio "github.com/coral/aubio-go"
 )
 
 var (

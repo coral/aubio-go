@@ -12,7 +12,9 @@ package aubio
 
 /*
 #cgo LDFLAGS: -laubio
+#define AUBIO_UNSTABLE 1
 #include <aubio/aubio.h>
+#include <aubio/tempo/beattracking.h>
 */
 import "C"
 
@@ -68,7 +70,7 @@ func (t *Tempo) Do(input *SimpleBuffer) {
 	C.aubio_tempo_do(t.o, input.vec, t.buf.vec)
 }
 
-// SetSilence sets the tempo detection silence threshold.
+// SdtSilence sets the tempo detection silence threshold.
 func (t *Tempo) SetSilence(silence float64) {
 	if t.o == nil {
 		return
@@ -121,8 +123,6 @@ func (t *Tempo) Free() {
 	t.o = nil
 }
 
-/* Only available in AUBIO_UNSTABLE
-
 // BeatTracker is a wrapper for the aubio_beattracking_t beattracking
 // detection object. See https://github.com/piem/aubio/blob/develop/src/tempo/beattracking.h
 // for more details.
@@ -138,9 +138,9 @@ type BeatTracker struct {
 //         // handle error
 //     }
 //     defer t.Free()
-func NewBeatTracker(blockSize uint) (*BeatTracker, error) {
-	t, err := C.new_aubio_beattracking(C.uint_t(blockSize))
-    if t == nil {
+func NewBeatTracker(blockSize uint, bufSize uint, samplerate uint) (*BeatTracker, error) {
+	t, err := C.new_aubio_beattracking(C.uint_t(blockSize), C.uint_t(bufSize), C.uint_t(samplerate))
+	if t == nil {
 		return nil, fmt.Errorf("Failure creating BeatTracker object %q", err)
 	}
 	return &BeatTracker{t}, nil
@@ -148,12 +148,13 @@ func NewBeatTracker(blockSize uint) (*BeatTracker, error) {
 
 // Do executes the beattracking detection on an input Buffer.
 // It returns the estimated beat locations in a new buffer.
-func (t *BeatTracker) Do(input *Buffer, out *Buffer) {
+func (t *BeatTracker) Do(input *SimpleBuffer, out *SimpleBuffer) {
 	if t.o == nil {
 		return
 	}
 	C.aubio_beattracking_do(t.o, input.vec, out.vec)
 }
+
 // GetBpm returns the bpm after running Do on an input Buffer
 //     t, err := NewBeatTracker(mode, bufSize, blockSize, samplerate)
 //      if err != nil {
@@ -190,4 +191,3 @@ func (t *BeatTracker) Free() {
 	C.del_aubio_beattracking(t.o)
 	t.o = nil
 }
-*/ // AUBIO_UNSTABLE

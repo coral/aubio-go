@@ -12,9 +12,9 @@ const (
 	SampleRate = 48000
 	Channels   = 1
 	BufSize    = 512
-	BlockSize  = 256
-	Silence    = -90.0
-	Threshold  = -20.0
+	BlockSize  = 512
+	Silence    = -35.0
+	Threshold  = 0.3
 )
 
 func main() {
@@ -33,11 +33,13 @@ func main() {
 	//Initiate Aubio
 	ta := aubio.TempoOrDie(aubio.SpecDiff, uint(BufSize), uint(BlockSize), uint(SampleRate))
 	ta.SetSilence(Silence)
-	ta.SetThreshold(Threshold)
+	//ta.SetThreshold(Threshold)
 
 	oa := aubio.OnsetOrDie(aubio.SpecDiff, uint(BufSize), uint(BlockSize), uint(SampleRate))
 	oa.SetSilence(Silence)
-	oa.SetThreshold(Threshold)
+	//oa.SetThreshold(-10.0)
+
+	//ba := aubio
 
 	chk(stream.Start())
 
@@ -48,7 +50,12 @@ func main() {
 		b := aubio.NewSimpleBufferData(BufSize, fixb)
 		go processTempo(ta, b)
 		go processOnset(oa, b)
+		//go lel(in)
 	}
+}
+
+func lel(b []float32) {
+	fmt.Println(b)
 }
 
 func processTempo(ta *aubio.Tempo, b *aubio.SimpleBuffer) {
