@@ -14,7 +14,7 @@ const (
 	BufSize    = 512
 	BlockSize  = 256
 	Silence    = -90.0
-	Threshold  = -10.0
+	Threshold  = -20.0
 )
 
 func main() {
@@ -23,6 +23,7 @@ func main() {
 	//Init portaudio
 	portaudio.Initialize()
 	defer portaudio.Terminate()
+	nSamples := 0
 
 	in := make([]float32, BufSize)
 	stream, err := portaudio.OpenDefaultStream(Channels, 0, SampleRate, len(in), in)
@@ -34,21 +35,39 @@ func main() {
 	ta.SetSilence(Silence)
 	ta.SetThreshold(Threshold)
 
-	//ch := make(chan float64)
+	oa := aubio.OnsetOrDie(aubio.SpecDiff, uint(BufSize), uint(BlockSize), uint(SampleRate))
+	oa.SetSilence(Silence)
+	oa.SetThreshold(Threshold)
 
 	chk(stream.Start())
 
 	for {
 		chk(stream.Read())
+		nSamples += len(in)
 		fixb := convertTo64(in)
 		b := aubio.NewSimpleBufferData(BufSize, fixb)
-		ta.Do(b)
-		for _, f := range ta.Buffer().Slice() {
-			if f != 0 {
-				fmt.Printf("Beat %.6f\n", f)
-				fmt.Println(ta.GetBpm())
-				fmt.Println(ta.GetConfidence())
-			}
+		go processTempo(ta, b)
+		go processOnset(oa, b)
+	}
+}
+
+func processTempo(ta *aubio.Tempo, b *aubio.SimpleBuffer) {
+	ta.Do(b)
+	for _, f := range ta.Buffer().Slice() {
+		if f != 0 {
+			fmt.Printf("Beat %.6f\n", f)
+			fmt.Println(ta.GetBpm())
+			fmt.Println(ta.GetConfidence())
+		}
+	}
+}
+
+func processOnset(oa *aubio.Onset, b *aubio.SimpleBuffer) {
+	oa.Do(b)
+
+	for _, f := range oa.Buffer().Slice() {
+		if f != 0 {
+			fmt.Printf("Onset %.6f\n", f)
 		}
 	}
 }
