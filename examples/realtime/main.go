@@ -13,7 +13,7 @@ const (
 	Channels   = 1
 	BufSize    = 512
 	BlockSize  = 512
-	Silence    = -35.0
+	Silence    = -70.0
 	Threshold  = 0.3
 )
 
