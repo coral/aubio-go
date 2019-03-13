@@ -42,8 +42,8 @@ func (fft *FFT) Do(in *SimpleBuffer) {
 	}
 }
 
-func (fft *FFT) GetSpectrum() {
-
+func (fft *FFT) Buffer() *ComplexBuffer {
+	return fft.buf
 }
 
 // filterbank
