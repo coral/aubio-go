@@ -22,15 +22,39 @@ import (
 
 // fft
 
+type FFT struct {
+	o   *C.aubio_fft_t
+	buf *ComplexBuffer
+}
+
+func NewFFT(size uint) *FFT {
+	return &FFT{
+		o:   C.new_aubio_fft(C.uint_t(size)),
+		buf: NewComplexBuffer(size),
+	}
+}
+
+func (fft *FFT) Do(in *SimpleBuffer) {
+	if fft.o != nil {
+		C.aubio_fft_do(fft.o, in.vec, fft.buf.data)
+	} else {
+		log.Println("Called Do on empty FFT. Maybe you called Free previously?")
+	}
+}
+
+func (fft *FFT) GetSpectrum() {
+
+}
+
 // filterbank
 type FilterBank struct {
-	o *C.aubio_filterbank_t
+	o   *C.aubio_filterbank_t
 	buf *SimpleBuffer
 }
 
 func NewFilterBank(filters uint, win_s uint) *FilterBank {
-	return  &FilterBank {
-		o: C.new_aubio_filterbank(C.uint_t(filters), C.uint_t(win_s)),
+	return &FilterBank{
+		o:   C.new_aubio_filterbank(C.uint_t(filters), C.uint_t(win_s)),
 		buf: NewSimpleBuffer(win_s),
 	}
 }
@@ -51,7 +75,6 @@ func (fb *FilterBank) Buffer() *SimpleBuffer {
 	return fb.buf
 }
 
-
 // mfcc
 
 // phasvoc
@@ -68,7 +91,7 @@ func NewPhaseVoc(bufSize, fftLen uint) (*PhaseVoc, error) {
 		return nil, err
 	}
 	return &PhaseVoc{
-		o: pvoc,
+		o:     pvoc,
 		grain: NewComplexBuffer(fftLen)}, nil
 }
 
@@ -86,7 +109,6 @@ func (pv *PhaseVoc) Free() {
 func (pv *PhaseVoc) Grain() *ComplexBuffer {
 	return pv.grain
 }
-
 
 func (pv *PhaseVoc) Do(in *SimpleBuffer) {
 	if pv != nil || pv.o != nil {

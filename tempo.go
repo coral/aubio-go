@@ -114,6 +114,22 @@ func (t *Tempo) GetConfidence() float64 {
 	return float64(C.aubio_tempo_get_confidence(t.o))
 }
 
+// GetCurrentDelayMs returns the delay in ms
+func (t *Tempo) GetCurrentDelayMs() float64 {
+	if t.o == nil {
+		return 0
+	}
+	return float64(C.aubio_tempo_get_delay_ms(t.o))
+}
+
+// GetLastBeatDetectedMs returns the last beat detected in ms
+func (t *Tempo) GetLastBeatDetectedMs() float64 {
+	if t.o == nil {
+		return 0
+	}
+	return float64(C.aubio_tempo_get_period_s(t.o))
+}
+
 // Free frees the aubio_temp_t object's memory.
 func (t *Tempo) Free() {
 	if t.o == nil {
@@ -127,7 +143,19 @@ func (t *Tempo) Free() {
 // detection object. See https://github.com/piem/aubio/blob/develop/src/tempo/beattracking.h
 // for more details.
 type BeatTracker struct {
-	o *C.aubio_beattracking_t
+	o   *C.aubio_beattracking_t
+	buf *SimpleBuffer
+}
+
+// BeatTrackerOrDie constructs a new BeatTracker object.
+// It panics on any errors.
+func BeatTrackerOrDie(bufSize, blocksize, samplerate uint) *BeatTracker {
+	if t, err := NewBeatTracker(bufSize, blocksize, samplerate); err == nil {
+		return t
+	} else {
+		panic(err)
+	}
+	panic("Unreachable")
 }
 
 // NewBeatTracker constructs a new BeatTracker object.
@@ -143,16 +171,20 @@ func NewBeatTracker(blockSize uint, bufSize uint, samplerate uint) (*BeatTracker
 	if t == nil {
 		return nil, fmt.Errorf("Failure creating BeatTracker object %q", err)
 	}
-	return &BeatTracker{t}, nil
+	return &BeatTracker{o: t, buf: NewSimpleBuffer(blockSize)}, nil
 }
 
 // Do executes the beattracking detection on an input Buffer.
 // It returns the estimated beat locations in a new buffer.
-func (t *BeatTracker) Do(input *SimpleBuffer, out *SimpleBuffer) {
+func (t *BeatTracker) Do(input *SimpleBuffer) {
 	if t.o == nil {
 		return
 	}
-	C.aubio_beattracking_do(t.o, input.vec, out.vec)
+	C.aubio_beattracking_do(t.o, input.vec, t.buf.vec)
+}
+
+func (t *BeatTracker) Buffer() *SimpleBuffer {
+	return t.buf
 }
 
 // GetBpm returns the bpm after running Do on an input Buffer
@@ -163,6 +195,13 @@ func (t *BeatTracker) Do(input *SimpleBuffer, out *SimpleBuffer) {
 //      t.Do(buf)
 //      fmt.Println("BPM: ", t.GetBpm())
 func (t *BeatTracker) GetBpm() float64 {
+	if t.o == nil {
+		return 0
+	}
+	return float64(C.aubio_beattracking_get_bpm(t.o))
+}
+
+func (t *BeatTracker) GetPeriodSeconds() float64 {
 	if t.o == nil {
 		return 0
 	}
